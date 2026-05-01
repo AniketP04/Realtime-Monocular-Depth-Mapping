@@ -4,7 +4,7 @@ A PyTorch-based depth estimation project using the NYU dataset. This implementat
 
 ## Abstract
 
-This project focuses on monocular depth estimation from single RGB images using deep neural networks. Depth estimation is a critical task in computer vision with applications in robotics, autonomous driving, 3D reconstruction, and scene understanding. This work implements and compares multiple network architectures (Autoencoder and UNet) trained on the NYU Depth dataset. Our approach combines multiple loss functions including SSIM loss and gradient-based depth loss to improve depth prediction quality. The implemented methods achieve competitive accuracy with efficient computational performance suitable for real-time applications.
+This project focuses on monocular depth estimation from single RGB images using deep neural networks. Depth estimation is a critical task in computer vision with applications in robotics, autonomous driving, 3D reconstruction, and scene understanding. This work implements and compares multiple network architectures (Autoencoder and UNet) trained on the [NYU Depth dataset](https://www.kaggle.com/datasets/awsaf49/nyuv2-official-split-dataset). Our approach combines multiple loss functions including SSIM loss and gradient-based depth loss to improve depth prediction quality. The implemented methods achieve competitive accuracy with efficient computational performance suitable for real-time applications.
 
 ## Project Overview
 
