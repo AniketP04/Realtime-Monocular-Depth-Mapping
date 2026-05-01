@@ -164,19 +164,17 @@ The loss curve shows:
 
 ## Results
 
-### Network Architecture Visualization
-
-![Network Blocks: Convolution and Upsampling Operations](network_blocks.jpeg)
-
-The diagram illustrates the fundamental building blocks used in both networks:
-- **Convolution Block**: Three sequential 3×3 convolutions with batch normalization and ReLU activation, followed by MaxPooling
-- **Upsampling Block**: Bilinear interpolation followed by 3×3 convolutions with ReLU activation
-
 ### Qualitative Results
 
 The following comparison shows the depth estimation performance:
 
-![Depth Estimation Results: Input → Baseline → Our Method → Ground Truth](result.jpeg)
+https://github.com/AniketP04/Image-Depth-Estimation/blob/main/result/baseline1.jpeg
+
+| Input | Ground Truth | Baseline | Method |
+|------|------|------|------|
+| ![input1](https://github.com/AniketP04/Image-Depth-Estimation/blob/main/result/input1.jpeg) | ![gt1](https://github.com/AniketP04/Image-Depth-Estimation/blob/main/result/gt1.jpeg) | ![baseline1](https://github.com/AniketP04/Image-Depth-Estimation/blob/main/result/baseline1.jpeg) | ![method1](https://github.com/AniketP04/Image-Depth-Estimation/blob/main/result/method1.jpeg) |
+| ![input2](https://github.com/AniketP04/Image-Depth-Estimation/blob/main/result/input2.jpeg) | ![gt2](https://github.com/AniketP04/Image-Depth-Estimation/blob/main/result/gt2.jpeg) | ![baseline2](https://github.com/AniketP04/Image-Depth-Estimation/blob/main/result/baseline2.jpeg) | ![method2](https://github.com/AniketP04/Image-Depth-Estimation/blob/main/result/method2.jpeg) |
+| ![input3](https://github.com/AniketP04/Image-Depth-Estimation/blob/main/result/input3.jpeg) | ![gt3](https://github.com/AniketP04/Image-Depth-Estimation/blob/main/result/gt3.jpeg) | ![baseline3](https://github.com/AniketP04/Image-Depth-Estimation/blob/main/result/baseline3.jpeg)) | ![method3](https://github.com/AniketP04/Image-Depth-Estimation/blob/main/result/method3.jpeg) |
 
 **Observations:**
 - **Input Row**: Original RGB images from NYU dataset
