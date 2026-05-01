@@ -222,6 +222,16 @@ Training parameters are managed through a configuration file (params.json). Key 
 - `checkpoint`: Path to checkpoint for resuming training (optional)
 - `alpha`, `beta`, `theta`: Loss function weights
 
+### Training Hyperparameters
+
+The following hyperparameters were used for training:
+
+- **Optimizer**: Adam
+- **Learning Rate**: 10^-4
+- **Batch Size**: 8
+- **Alpha (α)**: 2
+- **Gamma (γ)**: 5
+
 ## Models
 
 ### Supported Architectures
