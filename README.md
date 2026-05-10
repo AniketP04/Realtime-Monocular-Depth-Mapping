@@ -1,4 +1,4 @@
-# Realtime Image Depth Estimation
+# Realtime Monocular Depth Mapping
 
 A PyTorch-based depth estimation project using the NYU dataset. This implementation includes various neural network architectures for single image depth prediction with custom loss functions and data augmentation.
 
