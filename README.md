@@ -1,14 +1,14 @@
 # Realtime Monocular Depth Mapping
 
-A PyTorch-based depth estimation project using the NYU dataset. This implementation includes various neural network architectures for single image depth prediction with custom loss functions and data augmentation.
+A PyTorch-based depth mapping project using the NYU dataset. This implementation includes various neural network architectures for single image depth prediction with custom loss functions and data augmentation.
 
 ## Abstract
 
-This project focuses on monocular depth estimation from single RGB images using deep neural networks. Depth estimation is a critical task in computer vision with applications in robotics, autonomous driving, 3D reconstruction, and scene understanding. This work implements and compares multiple network architectures (Autoencoder and UNet) trained on the [NYU Depth dataset](https://www.kaggle.com/datasets/awsaf49/nyuv2-official-split-dataset). Our approach combines multiple loss functions including SSIM loss and gradient-based depth loss to improve depth prediction quality. The implemented methods achieve competitive accuracy with efficient computational performance suitable for real-time applications.
+This project focuses on monocular depth mapping from single RGB images using deep neural networks. Depth mapping is a critical task in computer vision with applications in robotics, autonomous driving, 3D reconstruction, and scene understanding. This work implements and compares multiple network architectures (Autoencoder and UNet) trained on the [NYU Depth dataset](https://www.kaggle.com/datasets/awsaf49/nyuv2-official-split-dataset). Our approach combines multiple loss functions including SSIM loss and gradient-based depth loss to improve depth prediction quality. The implemented methods achieve competitive accuracy with efficient computational performance suitable for real-time applications.
 
 ## Project Overview
 
-This project trains and evaluates deep learning models for monocular depth estimation. The framework supports multiple model architectures and provides comprehensive training and evaluation pipelines.
+This project trains and evaluates deep learning models for monocular depth mapping. The framework supports multiple model architectures and provides comprehensive training and evaluation pipelines.
 
 ## Features
 
@@ -61,7 +61,7 @@ pip install torch torchvision numpy tensorboardX opencv-python matplotlib imagei
 
 ### Network Architectures
 
-The project implements and compares two primary network architectures for depth estimation:
+The project implements and compares two primary network architectures for depth mapping:
 
 #### 1. Autoencoder Network
 
@@ -166,13 +166,13 @@ The loss curve shows:
 
 ### Qualitative Results
 
-The following comparison shows the depth estimation performance:
+The following comparison shows the depth mapping performance:
 
 | Input | Ground Truth | Baseline | Method |
 |------|------|------|------|
-| ![input1](https://github.com/AniketP04/Image-Depth-Estimation/blob/main/result/input1.jpeg) | ![gt1](https://github.com/AniketP04/Image-Depth-Estimation/blob/main/result/gt1.jpeg) | ![baseline1](https://github.com/AniketP04/Image-Depth-Estimation/blob/main/result/baseline1.jpeg) | ![method1](https://github.com/AniketP04/Image-Depth-Estimation/blob/main/result/method1.jpeg) |
-| ![input2](https://github.com/AniketP04/Image-Depth-Estimation/blob/main/result/input2.jpeg) | ![gt2](https://github.com/AniketP04/Image-Depth-Estimation/blob/main/result/gt2.jpeg) | ![baseline2](https://github.com/AniketP04/Image-Depth-Estimation/blob/main/result/baseline2.jpeg) | ![method2](https://github.com/AniketP04/Image-Depth-Estimation/blob/main/result/method2.jpeg) |
-| ![input3](https://github.com/AniketP04/Image-Depth-Estimation/blob/main/result/input3.jpeg) | ![gt3](https://github.com/AniketP04/Image-Depth-Estimation/blob/main/result/gt3.jpeg) | ![baseline3](https://github.com/AniketP04/Image-Depth-Estimation/blob/main/result/baseline3.jpeg) | ![method3](https://github.com/AniketP04/Image-Depth-Estimation/blob/main/result/method3.jpeg) |
+| ![input1](https://github.com/AniketP04/Image-Depth-mapping/blob/main/result/input1.jpeg) | ![gt1](https://github.com/AniketP04/Image-Depth-mapping/blob/main/result/gt1.jpeg) | ![baseline1](https://github.com/AniketP04/Image-Depth-mapping/blob/main/result/baseline1.jpeg) | ![method1](https://github.com/AniketP04/Image-Depth-mapping/blob/main/result/method1.jpeg) |
+| ![input2](https://github.com/AniketP04/Image-Depth-mapping/blob/main/result/input2.jpeg) | ![gt2](https://github.com/AniketP04/Image-Depth-mapping/blob/main/result/gt2.jpeg) | ![baseline2](https://github.com/AniketP04/Image-Depth-mapping/blob/main/result/baseline2.jpeg) | ![method2](https://github.com/AniketP04/Image-Depth-mapping/blob/main/result/method2.jpeg) |
+| ![input3](https://github.com/AniketP04/Image-Depth-mapping/blob/main/result/input3.jpeg) | ![gt3](https://github.com/AniketP04/Image-Depth-mapping/blob/main/result/gt3.jpeg) | ![baseline3](https://github.com/AniketP04/Image-Depth-mapping/blob/main/result/baseline3.jpeg) | ![method3](https://github.com/AniketP04/Image-Depth-mapping/blob/main/result/method3.jpeg) |
 
 **Observations:**
 - **Input Row**: Original RGB images from NYU dataset
@@ -232,7 +232,7 @@ The following hyperparameters were used for training:
 
 ### Supported Architectures
 
-- **Autoencoder**: Encoder-decoder architecture for depth estimation
+- **Autoencoder**: Encoder-decoder architecture for depth mapping
 - **UNet**: U-Net architecture with skip connections for depth prediction
 
 Models can be selected dynamically using the `selector` module:
