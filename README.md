@@ -79,7 +79,7 @@ The Autoencoder follows a symmetric encoder-decoder structure designed for effic
 - UpBlocks: Bilinear upsampling followed by concatenation with encoder features
 - Progressive dimensionality changes: 3 → 13 → 32 → 57 → 76 → 101 (bottleneck) → 76 → 57 → 32 → 13 → 1
 
-![Autoencoder Architecture](feature_map.jpeg)
+![Autoencoder Architecture](assets/feature_map.jpeg)
 
 #### 2. UNet Network
 
@@ -154,7 +154,7 @@ Where α, β, γ are learnable weights (typically α=1, β=1, γ=1)
 
 **Training Loss Curve:**
 
-![Training Loss Curve](loss.jpeg)
+![Training Loss Curve](assets/loss.jpeg)
 
 The loss curve shows:
 - Initial rapid decrease in the first 200k iterations
@@ -170,9 +170,9 @@ The following comparison shows the depth mapping performance:
 
 | Input | Ground Truth | Baseline | Method |
 |------|------|------|------|
-| ![input1](https://github.com/AniketP04/Realtime-Monocular-Depth-Mapping/blob/main/result/input1.jpeg) | ![gt1](https://github.com/AniketP04/Realtime-Monocular-Depth-Mapping/blob/main/result/gt1.jpeg) | ![baseline1](https://github.com/AniketP04/Realtime-Monocular-Depth-Mapping/blob/main/result/baseline1.jpeg) | ![method1](https://github.com/AniketP04/Realtime-Monocular-Depth-Mapping/blob/main/result/method1.jpeg) |
-| ![input2](https://github.com/AniketP04/Realtime-Monocular-Depth-Mapping/blob/main/result/input2.jpeg) | ![gt2](https://github.com/AniketP04/Realtime-Monocular-Depth-Mapping/blob/main/result/gt2.jpeg) | ![baseline2](https://github.com/AniketP04/Realtime-Monocular-Depth-Mapping/blob/main/result/baseline2.jpeg) | ![method2](https://github.com/AniketP04/Realtime-Monocular-Depth-Mapping/blob/main/result/method2.jpeg) |
-| ![input3](https://github.com/AniketP04/Realtime-Monocular-Depth-Mapping/blob/main/result/input3.jpeg) | ![gt3](https://github.com/AniketP04/Realtime-Monocular-Depth-Mapping/blob/main/result/gt3.jpeg) | ![baseline3](https://github.com/AniketP04/Realtime-Monocular-Depth-Mapping/blob/main/result/baseline3.jpeg) | ![method3](https://github.com/AniketP04/Realtime-Monocular-Depth-Mapping/blob/main/result/method3.jpeg) |
+| ![input1](assets/input1.jpeg) | ![gt1](assets/gt1.jpeg) | ![baseline1](assets/baseline1.jpeg) | ![method1](assets/method1.jpeg) |
+| ![input2](assets/input2.jpeg) | ![gt2](assets/gt2.jpeg) | ![baseline2](assets/baseline2.jpeg) | ![method2](assets/method2.jpeg) |
+| ![input3](assets/input3.jpeg) | ![gt3](assets/gt3.jpeg) | ![baseline3](assets/baseline3.jpeg) | ![method3](assets/method3.jpeg) |
 
 **Observations:**
 - **Input Row**: Original RGB images from NYU dataset
