@@ -3,15 +3,39 @@ import math
 import torch.nn.functional as F  
 import numpy as np
  
-""" Loss file implementation refered from 
-https://github.com/ialhashim/DenseDepth/blob/master/PyTorch/loss.py
-"""  
+"""
+Loss functions for monocular depth mapping.
+
+This module implements custom loss functions including SSIM loss and
+gradient-based depth loss for training depth prediction models.
+Implementation referenced from DenseDepth repository.
+"""
 
 def gaussian(window_size, sigma):
+    """
+    Create a 1D Gaussian kernel.
+
+    Args:
+        window_size (int): Size of the Gaussian window.
+        sigma (float): Standard deviation of the Gaussian.
+
+    Returns:
+        torch.Tensor: Normalized 1D Gaussian kernel.
+    """
     gauss =  torch.Tensor([math.exp(-(x - window_size//2)**2/float(2*sigma**2)) for x in range(window_size)])
     return gauss/gauss.sum()
 
 def create_window(window_size, channel=1):
+    """
+    Create a 2D Gaussian window for SSIM calculation.
+
+    Args:
+        window_size (int): Size of the window.
+        channel (int): Number of channels.
+
+    Returns:
+        torch.Tensor: 2D Gaussian window tensor.
+    """
     _1D_window = gaussian(window_size, 1.5).unsqueeze(1)
     _2D_window = _1D_window.mm(_1D_window.t()).float().unsqueeze(0).unsqueeze(0)
 
@@ -21,6 +45,20 @@ def create_window(window_size, channel=1):
 
 
 def ssim(img1, img2, window_size=11, window=None, size_average=True, full=False):
+    """
+    Compute Structural Similarity Index (SSIM) between two images.
+
+    Args:
+        img1 (torch.Tensor): First image tensor.
+        img2 (torch.Tensor): Second image tensor.
+        window_size (int): Size of the sliding window.
+        window (torch.Tensor, optional): Pre-computed window. If None, creates one.
+        size_average (bool): If True, average over batch and spatial dimensions.
+        full (bool): If True, return both SSIM and contrast metric.
+
+    Returns:
+        torch.Tensor or tuple: SSIM score, or (SSIM, contrast_metric) if full=True.
+    """
 
     pad = window_size // 2
     
@@ -74,6 +112,19 @@ def ssim(img1, img2, window_size=11, window=None, size_average=True, full=False)
     return ret
 
 def image_gradients(img, device):
+    """
+    Compute image gradients in x and y directions.
+
+    Args:
+        img (torch.Tensor): Input image tensor of shape (B, C, H, W).
+        device (str): Device for tensor operations.
+
+    Returns:
+        tuple: (dy, dx) gradients in y and x directions.
+
+    Raises:
+        ValueError: If input tensor is not 4-dimensional.
+    """
     if len(img.shape) != 4:
         raise ValueError("Shape mismatch. Needs to be 4 dim tensor")
     
@@ -94,7 +145,17 @@ def image_gradients(img, device):
     return dy, dx
 
 def depth_loss(y_true, y_pred, device="cuda"):
-    
+    """
+    Compute gradient-based depth loss between predicted and true depth maps.
+
+    Args:
+        y_true (torch.Tensor): Ground truth depth map.
+        y_pred (torch.Tensor): Predicted depth map.
+        device (str): Device for computations.
+
+    Returns:
+        torch.Tensor: Gradient-based loss value.
+    """
     # Edges 
     dy_true, dx_true = image_gradients(y_true, device)
     dy_pred, dx_pred = image_gradients(y_pred, device) 

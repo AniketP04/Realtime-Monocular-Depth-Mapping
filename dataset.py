@@ -10,8 +10,30 @@ import augmentations as aug
 # depth
 SMALL_EPS = 1e-6
 
+"""
+NYU dataset loaders for monocular depth mapping.
+
+This module provides PyTorch Dataset classes for loading and preprocessing
+the NYU Depth dataset for training and testing depth mapping models.
+"""
+
 class NYUTrainset(Dataset):
+    """
+    PyTorch Dataset for NYU Depth training data.
+
+    Loads RGB images and corresponding depth maps from the NYU dataset,
+    applies preprocessing and optional data augmentations.
+    """
+
     def __init__(self, index_file, aug=None, debug=False):
+        """
+        Initialize the NYU training dataset.
+
+        Args:
+            index_file (str): Path to CSV file containing image and depth map paths.
+            aug (aug.Compose, optional): Data augmentation pipeline to apply.
+            debug (bool): If True, saves debug images and returns early.
+        """
         self.DEBUG = debug
         self.augmentation = aug
 
@@ -19,9 +41,24 @@ class NYUTrainset(Dataset):
             self.data_path = list(csv.reader(f))
 
     def __len__(self):
+        """
+        Return the number of samples in the dataset.
+
+        Returns:
+            int: Number of data samples.
+        """
         return len(self.data_path)
 
     def __getitem__(self, index):
+        """
+        Get a sample from the dataset.
+
+        Args:
+            index (int): Index of the sample to retrieve.
+
+        Returns:
+            tuple: Preprocessed image and depth map tensors.
+        """
         img = np.asarray(imageio.imread(self.data_path[index][0]), dtype=np.float)
         depth = np.asarray(imageio.imread(self.data_path[index][1]), dtype=np.float)
         depth_min = np.min(depth)
@@ -44,14 +81,42 @@ class NYUTrainset(Dataset):
 
 
 class NYUTestset(Dataset):
+    """
+    PyTorch Dataset for NYU Depth testing data.
+
+    Loads RGB images and corresponding depth maps from the NYU dataset
+    for evaluation purposes, without data augmentations.
+    """
+
     def __init__(self, index_file):
+        """
+        Initialize the NYU test dataset.
+
+        Args:
+            index_file (str): Path to CSV file containing image and depth map paths.
+        """
         with open(index_file, 'r') as f:
             self.data_path = list(csv.reader(f))
 
     def __len__(self):
+        """
+        Return the number of samples in the dataset.
+
+        Returns:
+            int: Number of data samples.
+        """
         return len(self.data_path)
 
     def __getitem__(self, index):
+        """
+        Get a sample from the dataset.
+
+        Args:
+            index (int): Index of the sample to retrieve.
+
+        Returns:
+            tuple: Preprocessed image and depth map tensors.
+        """
         img = np.asarray(imageio.imread(self.data_path[index][0]), dtype=np.float)
         depth = np.asarray(imageio.imread(self.data_path[index][1]), dtype=np.float)
         depth_min = np.min(depth)

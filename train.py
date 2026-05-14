@@ -1,3 +1,10 @@
+"""
+Training script for monocular depth mapping models.
+
+This module provides training functionality for depth prediction models,
+including data loading, loss computation, optimization, and validation.
+"""
+
 import os
 import tensorboardX
 import argparse
@@ -19,7 +26,45 @@ from dataset import NYUTrainset, NYUTestset
 from misc import AverageMeter
 
 class Trainer(object):
+    """
+    Trainer class for training depth mapping models.
+
+    Handles training loop, validation, logging, and checkpointing.
+    """
+
     def __init__(self, params):
+        self.device = torch.device("cuda:0" if params['device'] == "cuda" else "cpu")
+        self.bs = params['batch_size']
+        self.log_dir = filesys.prepare_log_dir(params['log_name'])
+        filesys.save_params(self.log_dir, params, save_name='params')
+        self.iter_nums = 0 if 'iter_nums' not in params else params['iter_nums']
+        augs = aug.Compose([aug.RandomHorizontallyFlip()])
+        train_dataset = NYUTrainset(index_file=params['train_idx'], aug=augs)
+        self.train_loader = DataLoader(train_dataset, batch_size=self.bs, drop_last=True if len(train_dataset) > self.bs else False, shuffle=True)
+        test_dataset = NYUTestset(index_file=params['test_idx'])
+        self.testset_len = len(test_dataset)
+        self.test_loader = DataLoader(test_dataset, batch_size=1, drop_last=False, shuffle=False)
+        self.L1_criterion = nn.L1Loss()
+        self.logger = tensorboardX.SummaryWriter(os.path.join(self.log_dir, 'tensorboard', time.asctime(time.localtime(time.time()))))
+        self.model_name = params['model_name']
+        self.model = getattr(selector, self.model_name)()
+        self.model.to(self.device)
+        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=params['lr'])
+        if params['checkpoint']:
+            ckpt_path = params['checkpoint']
+            print('loading ckpt from {}'.format(ckpt_path))
+            state_dict = torch.load(os.path.join(ckpt_path, '{}.pth.tar').format(self.model_name))
+            self.model.load_state_dict(state_dict)
+            state_dict = torch.load(os.path.join(ckpt_path, 'optimizer.pth.tar'))
+            self.optimizer.load_state_dict(state_dict)
+
+    def __init__(self, params):
+        """
+        Initialize the Trainer for training.
+
+        Args:
+            params (dict): Configuration parameters including device, batch_size, etc.
+        """
         self.device = torch.device("cuda:0" if params['device'] == "cuda" else "cpu")
         self.bs = params['batch_size']
         self.log_dir = filesys.prepare_log_dir(params['log_name'])
@@ -52,7 +97,10 @@ class Trainer(object):
 
     def train(self, epoch):
         """
-        Train for an epoch
+        Train the model for one epoch.
+
+        Args:
+            epoch (int): Current epoch number.
         """
         epoch_loss = AverageMeter()
         self.model.train()
@@ -107,6 +155,34 @@ class Trainer(object):
 
                 print("Iter {}/{}, loss: {:.4f}".format(i, len(self.test_loader), total_loss.item()))
 
+    def validate(self, epoch):
+        """
+        Validate the model on the test dataset.
+
+        Args:
+            epoch (int): Current epoch number.
+        """
+        val_final_loss = AverageMeter()
+        with torch.no_grad():
+            self.model.eval()
+            for i, data in enumerate(self.test_loader):
+                # Unpack 
+                input_img = data[0].to(self.device, dtype=torch.float)
+                depth_gt = data[1].to(self.device, dtype=torch.float)
+
+                # Step 
+                depth_pred = self.model(input_img)
+
+                l1_loss = self.L1_criterion(depth_pred, depth_gt)
+                ssim_loss = torch.clamp((1-ssim_criterion(depth_pred, depth_gt))*0.5, 0, 1)
+                grad_loss = gradient_criterion(depth_gt, depth_pred, self.device)
+
+                total_loss = self.alpha * l1_loss + self.beta * ssim_loss + self.theta * grad_loss
+                total_loss /= (self.alpha + self.beta + self.theta)
+                val_final_loss.update(total_loss.item(), self.bs)
+
+                print("Iter {}/{}, loss: {:.4f}".format(i, len(self.test_loader), total_loss.item()))
+
                 # log
                 if i % 20 == 0:
                     self.logger.add_scalar('val/loss_total', total_loss.item(), epoch * self.testset_len + i)
@@ -119,6 +195,13 @@ class Trainer(object):
 
 
     def _save_ckpt(self, epoch, is_val=False):
+        """
+        Save model and optimizer checkpoints.
+
+        Args:
+            epoch (int): Current epoch number.
+            is_val (bool): Whether this is a validation checkpoint.
+        """
         if is_val:
             save_dir = os.path.join(self.log_dir, "best_val")
         else:
@@ -130,6 +213,12 @@ class Trainer(object):
 
 
 def parse_argument():
+    """
+    Parse command line arguments for training configuration.
+
+    Returns:
+        dict: Parsed parameters dictionary.
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument('--device', default='cuda', type=str)
     parser.add_argument('--local_config', default='')

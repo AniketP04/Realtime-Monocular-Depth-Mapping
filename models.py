@@ -2,23 +2,82 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+"""
+Neural network architectures for monocular depth mapping.
+
+This module implements various deep learning models including Autoencoder
+and U-Net architectures for single image depth prediction.
+"""
+
 def conv1x1(input_channels, output_channels, stride=1, padding=0, bias=False):
+    """
+    Create a 1x1 convolution layer.
+
+    Args:
+        input_channels (int): Number of input channels.
+        output_channels (int): Number of output channels.
+        stride (int): Stride for convolution.
+        padding (int): Padding for convolution.
+        bias (bool): Whether to include bias.
+
+    Returns:
+        nn.Conv2d: 1x1 convolution layer.
+    """
     return nn.Conv2d(input_channels, output_channels, kernel_size=1, stride=stride, padding=padding, bias=bias)    
 
 def conv3x3(input_channels, output_channels, stride=1, padding=1, bias=False):
+    """
+    Create a 3x3 convolution layer with reflection padding.
+
+    Args:
+        input_channels (int): Number of input channels.
+        output_channels (int): Number of output channels.
+        stride (int): Stride for convolution.
+        padding (int): Padding for reflection padding.
+        bias (bool): Whether to include bias.
+
+    Returns:
+        nn.Sequential: Sequential module with reflection padding and conv.
+    """
     return nn.Sequential(
         nn.ReflectionPad2d(padding),
         nn.Conv2d(input_channels, output_channels, kernel_size=3, stride=stride, padding=0, bias=bias)
     )
 
 def conv5x5(input_channels, output_channels, stride=1, padding=2, bias=False):
+    """
+    Create a 5x5 convolution layer with reflection padding.
+
+    Args:
+        input_channels (int): Number of input channels.
+        output_channels (int): Number of output channels.
+        stride (int): Stride for convolution.
+        padding (int): Padding for reflection padding.
+        bias (bool): Whether to include bias.
+
+    Returns:
+        nn.Sequential: Sequential module with reflection padding and conv.
+    """
     return nn.Sequential(
         nn.ReflectionPad2d(padding),
         nn.Conv2d(input_channels, output_channels, kernel_size=5, stride=stride, padding=0, bias=bias)
     )
 
 class ConvBlock(nn.Module):
+    """
+    Convolutional block with three 3x3 convolutions and LeakyReLU activations.
+
+    Used as building block for encoder/decoder in autoencoder architecture.
+    """
+
     def __init__(self, input_channels, output_channels):
+        """
+        Initialize the ConvBlock.
+
+        Args:
+            input_channels (int): Number of input channels.
+            output_channels (int): Number of output channels.
+        """
         super(ConvBlock, self).__init__()
         self.block = nn.Sequential(
             conv3x3(input_channels, output_channels),
@@ -31,10 +90,34 @@ class ConvBlock(nn.Module):
 
     # not RNN here
     def forward(self, x):
+        """
+        Forward pass through the ConvBlock.
+
+        Args:
+            x (torch.Tensor): Input tensor.
+
+        Returns:
+            torch.Tensor: Output tensor after convolutions and activations.
+        """
         return self.block(x)
 
 class UpBlock(nn.Module):
+    """
+    Upsampling block for decoder with skip connections.
+
+    Performs upsampling and concatenation with skip connections from encoder.
+    """
+
     def __init__(self, input_channels, output_channels, is_deconv=False, is_out=False):
+        """
+        Initialize the UpBlock.
+
+        Args:
+            input_channels (int): Number of input channels.
+            output_channels (int): Number of output channels.
+            is_deconv (bool): Whether to use transposed convolution for upsampling.
+            is_out (bool): Whether this is the output block.
+        """
         super(UpBlock, self).__init__()
         if is_deconv:
             self.up = nn.ConvTranspose2d(input_channels, output_channels, kernel_size=2, stride=2)
@@ -87,6 +170,53 @@ class UpBlock(nn.Module):
             else:
                 padding2 += [offset2 // 2 + 1, offset2 // 2]
 
+    def forward(self, inputs1, inputs2):
+        """
+        Forward pass through the UpBlock.
+
+        Args:
+            inputs1 (torch.Tensor): Skip connection from encoder.
+            inputs2 (torch.Tensor): Input from previous decoder layer.
+
+        Returns:
+            torch.Tensor: Output tensor after upsampling and convolution.
+        """
+        outputs2 = self.up(inputs2)
+
+        # for padding
+        offset1 = outputs2.size()[-1] - inputs1.size()[-1]
+        offset2 = outputs2.size()[-2] - inputs1.size()[-2]
+        padding1 = []
+        padding2 = []
+        if offset1 > 0:
+            padding2 += [0, 0]
+            if offset1 % 2 == 0:
+                padding1 += [offset1 // 2, offset1 // 2]
+            else:
+                padding1 += [offset1 // 2 + 1, offset1 // 2]
+        else:
+            offset1 = -offset1
+            padding1 += [0, 0]
+            if offset1 % 2 == 0:
+                padding2 += [offset1 // 2, offset1 // 2]
+            else:
+                padding2 += [offset1 // 2 + 1, offset1 // 2]
+
+        if offset2 > 0:
+            padding2 += [0, 0]
+            if offset2 % 2 == 0:
+                padding1 += [offset2 // 2, offset2 // 2]
+            else:
+                padding1 += [offset2 // 2 + 1, offset2 // 2]
+
+        else:
+            offset2 = -offset2
+            padding1 += [0, 0]
+            if offset2 % 2 == 0:
+                padding2 += [offset2 // 2, offset2 // 2]
+            else:
+                padding2 += [offset2 // 2 + 1, offset2 // 2]
+
         outputs1 = nn.functional.pad(inputs1, padding1, mode='replicate')
         outputs2 = nn.functional.pad(outputs2, padding2, mode='replicate')
 
@@ -96,7 +226,20 @@ class UpBlock(nn.Module):
         return output
 
 class Autoencoder(nn.Module):
+    """
+    Autoencoder architecture for monocular depth mapping.
+
+    U-Net style encoder-decoder with skip connections for depth prediction
+    from single RGB images.
+    """
+
     def __init__(self, input_channels=3):
+        """
+        Initialize the Autoencoder model.
+
+        Args:
+            input_channels (int): Number of input channels (default: 3 for RGB).
+        """
         super(Autoencoder, self).__init__()
         self.conv0 = ConvBlock(input_channels, 13)
         self.conv1 = ConvBlock(13, 32)
@@ -127,6 +270,28 @@ class Autoencoder(nn.Module):
         skip5 = self.conv5(x)
         x = nn.functional.max_pool2d(input=skip5, kernel_size=2)
 
+    def forward(self, x):
+        """
+        Forward pass through the Autoencoder.
+
+        Args:
+            x (torch.Tensor): Input RGB image tensor.
+
+        Returns:
+            torch.Tensor: Predicted depth map.
+        """
+        x = self.conv0(x)
+        skip1 = self.conv1(x)
+        x = nn.functional.max_pool2d(input=skip1, kernel_size=2)
+        skip2 = self.conv2(x)
+        x = nn.functional.max_pool2d(input=skip2, kernel_size=2)
+        skip3 = self.conv3(x)
+        x = nn.functional.max_pool2d(input=skip3, kernel_size=2)
+        skip4 = self.conv4(x)
+        x = nn.functional.max_pool2d(input=skip4, kernel_size=2)
+        skip5 = self.conv5(x)
+        x = nn.functional.max_pool2d(input=skip5, kernel_size=2)
+
         x = self.bottleneck(x)
         x = self.up1(skip5, x)
         x = self.up2(skip4, x)
@@ -139,9 +304,21 @@ class Autoencoder(nn.Module):
 # First UNet
 # source: https://github.com/milesial/Pytorch-UNet
 class DoubleConv(nn.Module):
-    """(convolution => [BN] => ReLU) * 2"""
+    """
+    Double convolution block: (convolution => [BN] => ReLU) * 2.
+
+    Standard building block for U-Net architecture.
+    """
 
     def __init__(self, in_channels, out_channels, mid_channels=None):
+        """
+        Initialize DoubleConv.
+
+        Args:
+            in_channels (int): Number of input channels.
+            out_channels (int): Number of output channels.
+            mid_channels (int, optional): Number of intermediate channels.
+        """
         super().__init__()
         if not mid_channels:
             mid_channels = out_channels
@@ -155,13 +332,33 @@ class DoubleConv(nn.Module):
         )
 
     def forward(self, x):
+        """
+        Forward pass through DoubleConv.
+
+        Args:
+            x (torch.Tensor): Input tensor.
+
+        Returns:
+            torch.Tensor: Output tensor.
+        """
         return self.double_conv(x)
 
 
 class Down(nn.Module):
-    """Downscaling with maxpool then double conv"""
+    """
+    Downscaling block with maxpool then double convolution.
+
+    Used in U-Net encoder for spatial reduction.
+    """
 
     def __init__(self, in_channels, out_channels):
+        """
+        Initialize Down block.
+
+        Args:
+            in_channels (int): Number of input channels.
+            out_channels (int): Number of output channels.
+        """
         super().__init__()
         self.maxpool_conv = nn.Sequential(
             nn.MaxPool2d(2),
@@ -169,13 +366,34 @@ class Down(nn.Module):
         )
 
     def forward(self, x):
+        """
+        Forward pass through Down block.
+
+        Args:
+            x (torch.Tensor): Input tensor.
+
+        Returns:
+            torch.Tensor: Downsampled output tensor.
+        """
         return self.maxpool_conv(x)
 
 
 class Up(nn.Module):
-    """Upscaling then double conv"""
+    """
+    Upscaling block then double convolution.
+
+    Used in U-Net decoder for spatial expansion with skip connections.
+    """
 
     def __init__(self, in_channels, out_channels, bilinear=True):
+        """
+        Initialize Up block.
+
+        Args:
+            in_channels (int): Number of input channels.
+            out_channels (int): Number of output channels.
+            bilinear (bool): Whether to use bilinear upsampling.
+        """
         super().__init__()
 
         # if bilinear, use the normal convolutions to reduce the number of channels
@@ -193,6 +411,22 @@ class Up(nn.Module):
         diffY = x2.size()[2] - x1.size()[2]
         diffX = x2.size()[3] - x1.size()[3]
 
+    def forward(self, x1, x2):
+        """
+        Forward pass through Up block with skip connection.
+
+        Args:
+            x1 (torch.Tensor): Input from previous decoder layer.
+            x2 (torch.Tensor): Skip connection from encoder.
+
+        Returns:
+            torch.Tensor: Upsampled output tensor.
+        """
+        x1 = self.up(x1)
+        # input is CHW
+        diffY = x2.size()[2] - x1.size()[2]
+        diffX = x2.size()[3] - x1.size()[3]
+
         x1 = F.pad(x1, [diffX // 2, diffX - diffX // 2,
                         diffY // 2, diffY - diffY // 2])
         # if you have padding issues, see
@@ -203,16 +437,53 @@ class Up(nn.Module):
 
 
 class OutConv(nn.Module):
+    """
+    Output convolution layer for U-Net.
+
+    Final 1x1 convolution to produce the desired number of output channels.
+    """
+
     def __init__(self, in_channels, out_channels):
+        """
+        Initialize OutConv.
+
+        Args:
+            in_channels (int): Number of input channels.
+            out_channels (int): Number of output channels.
+        """
         super(OutConv, self).__init__()
         self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=1)
 
     def forward(self, x):
+        """
+        Forward pass through OutConv.
+
+        Args:
+            x (torch.Tensor): Input tensor.
+
+        Returns:
+            torch.Tensor: Output tensor.
+        """
         return self.conv(x)
 
 
 class UNet(nn.Module):
+    """
+    U-Net architecture for image segmentation and depth prediction.
+
+    Encoder-decoder architecture with skip connections for precise
+    localization and depth estimation.
+    """
+
     def __init__(self, n_channels, n_classes, bilinear=True):
+        """
+        Initialize U-Net model.
+
+        Args:
+            n_channels (int): Number of input channels.
+            n_classes (int): Number of output classes/channels.
+            bilinear (bool): Whether to use bilinear upsampling.
+        """
         super(UNet, self).__init__()
         self.n_channels = n_channels
         self.n_classes = n_classes
@@ -231,6 +502,15 @@ class UNet(nn.Module):
         self.outc = OutConv(64, n_classes)
 
     def forward(self, x):
+        """
+        Forward pass through U-Net.
+
+        Args:
+            x (torch.Tensor): Input image tensor.
+
+        Returns:
+            torch.Tensor: Output prediction tensor.
+        """
         x1 = self.inc(x)
         x2 = self.down1(x1)
         x3 = self.down2(x2)

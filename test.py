@@ -1,3 +1,10 @@
+"""
+Testing script for monocular depth mapping models.
+
+This module provides evaluation functionality for trained depth prediction models,
+including metrics calculation and result visualization.
+"""
+
 import os
 import tensorboardX
 import argparse
@@ -21,7 +28,19 @@ from dataset import NYUTrainset, NYUTestset
 from misc import AverageMeter
 
 class Trainer(object):
+    """
+    Trainer class for testing depth mapping models.
+
+    Handles model loading, evaluation, and result saving.
+    """
+
     def __init__(self, params):
+        """
+        Initialize the Trainer for testing.
+
+        Args:
+            params (dict): Configuration parameters including device, batch_size, etc.
+        """
         self.device = torch.device("cuda:1" if params['device'] == "cuda" else "cpu")
         self.bs = params['batch_size']
         self.log_dir = filesys.prepare_log_dir(params['log_name'])
@@ -79,6 +98,49 @@ class Trainer(object):
 
                     
 
+    def test(self):
+        """
+        Run evaluation on the test dataset.
+
+        Computes MSE and SSIM metrics, optionally saves prediction images.
+        """
+        val_mse = AverageMeter()
+        val_ssim = AverageMeter()
+        with torch.no_grad():
+            self.model.eval()
+            for i, data in enumerate(self.test_loader):
+                # Unpack
+                input_img = data[0].to(self.device, dtype=torch.float)
+                depth_gt = data[1].to(self.device, dtype=torch.float)
+
+                # Step 
+                depth_pred = self.model(input_img)
+
+                MSE = self.criterion(depth_pred, depth_gt)
+                SSIM = ssim_criterion(depth_pred, depth_gt)
+                val_mse.update(MSE.item(), self.bs)
+                val_ssim.update(SSIM.item(), self.bs)
+                
+                if (self.save_image):
+                    if not os.path.exists(os.path.join(self.log_dir, 'results')):
+                        os.makedirs(os.path.join(self.log_dir, 'results'))
+                    save_image(input_img[0].cpu(), '{}/results/color_{}.png'.format(self.log_dir, i))
+                    save_image(depth_gt[0].cpu(), '{}/results/gt_{}.png'.format(self.log_dir, i))
+                    save_image(depth_pred[0].cpu(), '{}/results/predict_{}.png'.format(self.log_dir, i))
+
+                    image = cv2.imread('{}/results/gt_{}.png'.format(self.log_dir, i), 0)
+                    colormap = plt.get_cmap('inferno')
+                    heatmap = (colormap(image) * 2**16).astype(np.uint16)[:,:,:3]
+                    heatmap = cv2.cvtColor(heatmap, cv2.COLOR_RGB2BGR)
+                    cv2.imwrite('{}/results/gt_{}.png'.format(self.log_dir, i), heatmap)
+
+                    image = cv2.imread('{}/results/predict_{}.png'.format(self.log_dir, i), 0)
+                    heatmap = (colormap(image) * 2**16).astype(np.uint16)[:,:,:3]
+                    heatmap = cv2.cvtColor(heatmap, cv2.COLOR_RGB2BGR)
+                    cv2.imwrite('{}/results/predict_{}.png'.format(self.log_dir, i), heatmap)
+
+                    
+
                 print('Testing: {}'.format(i))
                 # # log
                 # if i % 20 == 0:
@@ -91,6 +153,12 @@ class Trainer(object):
 
 
 def parse_argument():
+    """
+    Parse command line arguments for testing configuration.
+
+    Returns:
+        dict: Parsed parameters dictionary.
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument('--device', default='cuda', type=str)
     parser.add_argument('--local_config', default='')
