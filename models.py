@@ -63,6 +63,13 @@ def conv5x5(input_channels, output_channels, stride=1, padding=2, bias=False):
         nn.Conv2d(input_channels, output_channels, kernel_size=5, stride=stride, padding=0, bias=bias)
     )
 
+
+# =========================================================
+# NETWORK 1:
+# STANDARD U-NET WITH TRANSPOSED CONVOLUTION /
+# NEAREST-NEIGHBOR UPSAMPLING
+# =========================================================
+
 class ConvBlock(nn.Module):
     """
     Convolutional block with three 3x3 convolutions and LeakyReLU activations.
@@ -134,43 +141,6 @@ class UpBlock(nn.Module):
         self.block = nn.Sequential(*blocks)
 
     def forward(self, inputs1, inputs2):
-        outputs2 = self.up(inputs2)
-
-        # for padding
-        offset1 = outputs2.size()[-1] - inputs1.size()[-1]
-        offset2 = outputs2.size()[-2] - inputs1.size()[-2]
-        padding1 = []
-        padding2 = []
-        if offset1 > 0:
-            padding2 += [0, 0]
-            if offset1 % 2 == 0:
-                padding1 += [offset1 // 2, offset1 // 2]
-            else:
-                padding1 += [offset1 // 2 + 1, offset1 // 2]
-        else:
-            offset1 = -offset1
-            padding1 += [0, 0]
-            if offset1 % 2 == 0:
-                padding2 += [offset1 // 2, offset1 // 2]
-            else:
-                padding2 += [offset1 // 2 + 1, offset1 // 2]
-
-        if offset2 > 0:
-            padding2 += [0, 0]
-            if offset2 % 2 == 0:
-                padding1 += [offset2 // 2, offset2 // 2]
-            else:
-                padding1 += [offset2 // 2 + 1, offset2 // 2]
-
-        else:
-            offset2 = -offset2
-            padding1 += [0, 0]
-            if offset2 % 2 == 0:
-                padding2 += [offset2 // 2, offset2 // 2]
-            else:
-                padding2 += [offset2 // 2 + 1, offset2 // 2]
-
-    def forward(self, inputs1, inputs2):
         """
         Forward pass through the UpBlock.
 
@@ -225,6 +195,7 @@ class UpBlock(nn.Module):
 
         return output
 
+
 class Autoencoder(nn.Module):
     """
     Autoencoder architecture for monocular depth mapping.
@@ -256,20 +227,7 @@ class Autoencoder(nn.Module):
         self.up5 = UpBlock(32, 13)
         self.conv_out = ConvBlock(13, 1)
 
-    # U-Net
-    def forward(self, x):
-        x = self.conv0(x)
-        skip1 = self.conv1(x)
-        x = nn.functional.max_pool2d(input=skip1, kernel_size=2)
-        skip2 = self.conv2(x)
-        x = nn.functional.max_pool2d(input=skip2, kernel_size=2)
-        skip3 = self.conv3(x)
-        x = nn.functional.max_pool2d(input=skip3, kernel_size=2)
-        skip4 = self.conv4(x)
-        x = nn.functional.max_pool2d(input=skip4, kernel_size=2)
-        skip5 = self.conv5(x)
-        x = nn.functional.max_pool2d(input=skip5, kernel_size=2)
-
+    # U-Net style forward with skip connections
     def forward(self, x):
         """
         Forward pass through the Autoencoder.
@@ -300,6 +258,13 @@ class Autoencoder(nn.Module):
         x = self.up5(skip1, x)
         x = self.conv_out(x)
         return x
+
+
+# =========================================================
+# NETWORK 2:
+# STANDARD U-NET WITH BILINEAR UPSAMPLING
+# =========================================================
+
 
 # First UNet
 # source: https://github.com/milesial/Pytorch-UNet
@@ -403,13 +368,6 @@ class Up(nn.Module):
         else:
             self.up = nn.ConvTranspose2d(in_channels , in_channels // 2, kernel_size=2, stride=2)
             self.conv = DoubleConv(in_channels, out_channels)
-
-
-    def forward(self, x1, x2):
-        x1 = self.up(x1)
-        # input is CHW
-        diffY = x2.size()[2] - x1.size()[2]
-        diffX = x2.size()[3] - x1.size()[3]
 
     def forward(self, x1, x2):
         """
